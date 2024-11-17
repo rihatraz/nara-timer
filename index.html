@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nara's Revision Timer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pink: #ff66a1;
+            --light-pink: #ffd1dc;
+            --lighter-pink: #fff0f3;
+            --white: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Varela Round', sans-serif;
+            background: linear-gradient(135deg, var(--lighter-pink) 0%, var(--light-pink) 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background-color: var(--white);
+            border-radius: 30px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 30px rgba(255, 102, 161, 0.2);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 10px;
+            background: linear-gradient(90deg, var(--pink), var(--light-pink), var(--pink));
+            border-radius: 30px 30px 0 0;
+        }
+
+        .header {
+            margin-bottom: 2rem;
+        }
+
+        .header img {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 4px 6px rgba(255, 102, 161, 0.2));
+        }
+
+        h1 {
+            color: var(--pink);
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            text-shadow: 2px 2px 4px rgba(255, 102, 161, 0.1);
+        }
+
+        .timer {
+            font-size: 4.5rem;
+            font-weight: bold;
+            color: var(--pink);
+            margin: 2rem 0;
+            text-shadow: 2px 2px 4px rgba(255, 102, 161, 0.1);
+            font-family: 'Varela Round', sans-serif;
+        }
+
+        .controls button {
+            background-color: var(--pink);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            font-family: 'Varela Round', sans-serif;
+            box-shadow: 0 4px 15px rgba(255, 102, 161, 0.2);
+        }
+
+        .controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 102, 161, 0.3);
+        }
+
+        .controls button:active {
+            transform: translateY(0);
+        }
+
+        .mode-selector {
+            margin: 2rem 0;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .mode-selector button {
+            background-color: var(--white);
+            color: var(--pink);
+            border: 2px solid var(--pink);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Varela Round', sans-serif;
+        }
+
+        .mode-selector button.active {
+            background-color: var(--pink);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 102, 161, 0.2);
+        }
+
+        .mode-selector button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 102, 161, 0.2);
+        }
+
+        .kitty-decoration {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 80px;
+            opacity: 0.8;
+            transform: rotate(-10deg);
+            transition: transform 0.3s ease;
+        }
+
+        .kitty-decoration:hover {
+            transform: rotate(0deg) scale(1.1);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 1.5rem;
+            }
+
+            .timer {
+                font-size: 3.5rem;
+            }
+
+            .mode-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .kitty-decoration {
+                width: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="images/hello-kitty-bow.svg" alt="Hello Kitty" class="main-kitty">
+            <h1>Nara's Revision Timer</h1>
+        </div>
+
+        <div class="mode-selector">
+            <button class="active" data-time="25">Pomodoro</button>
+            <button data-time="5">Short Break</button>
+            <button data-time="15">Long Break</button>
+        </div>
+
+        <div class="timer">25:00</div>
+
+        <div class="controls">
+            <button id="start">Start</button>
+            <button id="reset">Reset</button>
+        </div>
+    </div>
+
+    <img class="kitty-decoration" src="images/hello-kitty-bow.svg" alt="Hello Kitty Decoration">
+
+    <script>
+        let timeLeft;
+        let timerId = null;
+        let isRunning = false;
+        let isBreakTime = false;
+
+        const timerDisplay = document.querySelector('.timer');
+        const startButton = document.getElementById('start');
+        const resetButton = document.getElementById('reset');
+        const modeButtons = document.querySelectorAll('.mode-selector button');
+
+        function updateDisplay(minutes, seconds) {
+            timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function setTimer(minutes) {
+            timeLeft = minutes * 60;
+            updateDisplay(minutes, 0);
+        }
+
+        function switchToBreak() {
+            const breakButton = document.querySelector('[data-time="5"]');
+            modeButtons.forEach(btn => btn.classList.remove('active'));
+            breakButton.classList.add('active');
+            setTimer(5);
+            isBreakTime = true;
+            startTimer(); // Automatically start the break timer
+        }
+
+        function switchToPomodoro() {
+            const pomodoroButton = document.querySelector('[data-time="25"]');
+            modeButtons.forEach(btn => btn.classList.remove('active'));
+            pomodoroButton.classList.add('active');
+            setTimer(25);
+            isBreakTime = false;
+        }
+
+        function startTimer() {
+            if (timerId === null) {
+                timerId = setInterval(() => {
+                    timeLeft--;
+                    const minutes = Math.floor(timeLeft / 60);
+                    const seconds = timeLeft % 60;
+                    
+                    if (timeLeft <= 0) {
+                        clearInterval(timerId);
+                        timerId = null;
+                        isRunning = false;
+                        startButton.textContent = 'Start';
+                        new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play();
+                        
+                        // Switch between Pomodoro and break
+                        if (!isBreakTime) {
+                            switchToBreak();
+                        } else {
+                            switchToPomodoro();
+                        }
+                    }
+                    
+                    updateDisplay(minutes, seconds);
+                }, 1000);
+                isRunning = true;
+                startButton.textContent = 'Pause';
+            } else {
+                clearInterval(timerId);
+                timerId = null;
+                isRunning = false;
+                startButton.textContent = 'Start';
+            }
+        }
+
+        startButton.addEventListener('click', startTimer);
+
+        resetButton.addEventListener('click', () => {
+            clearInterval(timerId);
+            timerId = null;
+            isRunning = false;
+            startButton.textContent = 'Start';
+            const activeButton = document.querySelector('.mode-selector button.active');
+            setTimer(parseInt(activeButton.dataset.time));
+            isBreakTime = false;
+        });
+
+        modeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                modeButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                clearInterval(timerId);
+                timerId = null;
+                isRunning = false;
+                startButton.textContent = 'Start';
+                setTimer(parseInt(button.dataset.time));
+                isBreakTime = button.dataset.time === "5";
+            });
+        });
+
+        // Initialize timer
+        setTimer(25);
+    </script>
+</body>
+</html>
